@@ -18,8 +18,8 @@ public class BlockController : MonoBehaviour
 
         float cameraWidth = Camera.main.orthographicSize * Screen.width / Screen.height;
         float spawnX = Random.value > 0.5f ? cameraWidth + 5f : -cameraWidth - 5f; // Левый или правый край
-        float spawnZ = 10f; // Появление за башней
-        float spawnY = TowerHeightManager.Instance.CurrentTowerHeight + 5f; // Выше текущей башни
+        float spawnZ = 12f; // Появление за башней
+        float spawnY = TowerHeightManager.Instance.CurrentTowerHeight + 2f; // Выше текущей башни
 
         transform.position = new Vector3(spawnX, spawnY, spawnZ);
 
