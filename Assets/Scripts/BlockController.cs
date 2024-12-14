@@ -8,7 +8,7 @@ public class BlockController : MonoBehaviour
     private Rigidbody rb; // Компонент Rigidbody
     private bool hasLanded = false; // Флаг, если блок "пришел на место"
     private bool hasSupport = false; // Флаг наличия устойчивой опоры
-    private bool checkedStability = false; // Флаг, что устойчивость уже проверена
+    private bool hasRaisedCamera = false; // Флаг, чтобы камера поднималась только один раз
     private static bool isFirstBlock = true; // Проверка первого блока
 
     void Start()
@@ -19,7 +19,7 @@ public class BlockController : MonoBehaviour
         float cameraWidth = Camera.main.orthographicSize * Screen.width / Screen.height;
         float spawnX = Random.value > 0.5f ? cameraWidth + 5f : -cameraWidth - 5f; // Левый или правый край
         float spawnZ = 10f; // Появление за башней
-        float spawnY = 5f; // Высота появления блока
+        float spawnY = TowerHeightManager.Instance.CurrentTowerHeight + 5f; // Выше текущей башни
 
         transform.position = new Vector3(spawnX, spawnY, spawnZ);
 
@@ -53,14 +53,10 @@ public class BlockController : MonoBehaviour
     void FixedUpdate()
     {
         // Проверяем устойчивость после остановки, если она ещё не была проверена
-        if (!isMoving && hasLanded && !checkedStability)
+        if (!isMoving && hasLanded && !hasSupport && !hasRaisedCamera)
         {
-            checkedStability = true; // Устанавливаем флаг, чтобы проверка выполнялась только один раз
-
-            if (!hasSupport)
-            {
-                DestroyBlock(); // Удаляем блок, если нет поддержки
-            }
+            hasRaisedCamera = true; // Помечаем, что камера поднята
+            DestroyBlock(); // Удаляем блок, если нет поддержки
         }
     }
 
@@ -79,6 +75,7 @@ public class BlockController : MonoBehaviour
                     // Если это первый блок, он остаётся на базе
                     hasSupport = true;
                     isFirstBlock = false; // Сбрасываем флаг первого блока
+                    RaiseCameraOnce(); // Поднимаем камеру
                     this.enabled = false; // Отключаем скрипт
                     return;
                 }
@@ -87,7 +84,6 @@ public class BlockController : MonoBehaviour
             // Проверяем устойчивость на другом блоке
             if (collision.gameObject.CompareTag("Block"))
             {
-                // Проверяем, находится ли центр текущего блока над блоком, на который он падает
                 Bounds otherBounds = collision.collider.bounds;
 
                 if (transform.position.x >= otherBounds.min.x &&
@@ -96,6 +92,8 @@ public class BlockController : MonoBehaviour
                     transform.position.z <= otherBounds.max.z)
                 {
                     hasSupport = true; // Блок устойчив
+                    TowerHeightManager.Instance.UpdateTowerHeight(transform.position.y); // Обновляем высоту башни
+                    RaiseCameraOnce(); // Поднимаем камеру
                     this.enabled = false; // Отключаем скрипт
                 }
                 else
@@ -109,5 +107,19 @@ public class BlockController : MonoBehaviour
     private void DestroyBlock()
     {
         Destroy(gameObject); // Удаляем только текущий блок
+    }
+
+    private void RaiseCameraOnce()
+    {
+        // Поднимаем камеру только один раз
+        if (!hasRaisedCamera)
+        {
+            var cameraController = Camera.main?.GetComponent<CameraController>();
+            if (cameraController != null)
+            {
+                cameraController.RaiseCamera();
+            }
+            hasRaisedCamera = true;
+        }
     }
 }

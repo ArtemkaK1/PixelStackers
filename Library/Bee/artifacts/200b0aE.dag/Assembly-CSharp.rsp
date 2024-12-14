@@ -356,7 +356,9 @@
 -analyzer:"Library/PackageCache/com.unity.collab-proxy@2.6.0/Lib/Editor/Unity.Plastic.Newtonsoft.Json.dll"
 -analyzer:"Library/PackageCache/com.unity.collab-proxy@2.6.0/Lib/Editor/unityplastic.dll"
 "Assets/Scripts/BlockController.cs"
+"Assets/Scripts/CameraController.cs"
 "Assets/Scripts/GameManager.cs"
+"Assets/Scripts/TowerHeightManager.cs"
 -langversion:9.0
 /deterministic
 /optimize+
