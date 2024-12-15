@@ -17,8 +17,8 @@ public class BlockController : MonoBehaviour
         rb.isKinematic = true; // Физика отключена до остановки блока
 
         float cameraWidth = Camera.main.orthographicSize * Screen.width / Screen.height;
-        float spawnX = Random.value > 0.5f ? cameraWidth + 5f : -cameraWidth - 5f; // Левый или правый край
-        float spawnZ = 12f; // Появление за башней
+        float spawnX = Random.value > 0.5f ? cameraWidth + 0.5f : -cameraWidth - 0.5f; // Левый или правый край
+        float spawnZ = 8f; // Появление за башней
         float spawnY = TowerHeightManager.Instance.CurrentTowerHeight + 2f; // Выше текущей башни
 
         transform.position = new Vector3(spawnX, spawnY, spawnZ);
