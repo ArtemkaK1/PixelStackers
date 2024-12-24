@@ -1,19 +1,18 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public GameObject blockPrefab; // Префаб блока
-    private GameObject currentBlock; // Текущий блок
+    public GameObject blockPrefab;
+    private GameObject currentBlock;
 
     void Start()
     {
-        // Генерируем первый блок
         SpawnNewBlock();
     }
 
     void Update()
     {
-        // Проверяем, завершилось ли движение текущего блока
         if (currentBlock == null || !currentBlock.GetComponent<BlockController>().enabled)
         {
             SpawnNewBlock();
@@ -22,7 +21,13 @@ public class GameManager : MonoBehaviour
 
     void SpawnNewBlock()
     {
-        // Создаем новый блок
         currentBlock = Instantiate(blockPrefab);
+    }
+
+    public void RestartGame()
+    {
+        BlockController.isFirstBlock = true;
+        // ScoreManager.Instance.ResetScore();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class TowerHeightManager : MonoBehaviour
 {
-    public static TowerHeightManager Instance; // Синглтон
-    public float CurrentTowerHeight { get; private set; } = 0f; // Текущая высота башни
+    public static TowerHeightManager Instance;
+    public float CurrentTowerHeight { get; private set; } = 0f;
 
     private void Awake()
     {

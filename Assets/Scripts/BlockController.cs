@@ -2,86 +2,115 @@ using UnityEngine;
 
 public class BlockController : MonoBehaviour
 {
-    public float speed = 5f; // Скорость движения блока
-    private bool isMoving = true; // Флаг движения
-    private Vector3 direction; // Направление движения блока
-    private Rigidbody rb; // Компонент Rigidbody
-    private bool hasLanded = false; // Флаг, если блок "пришел на место"
-    private bool hasSupport = false; // Флаг наличия устойчивой опоры
-    private bool hasRaisedCamera = false; // Флаг, чтобы камера поднималась только один раз
-    private static bool isFirstBlock = true; // Проверка первого блока
+    public static bool isFirstBlock = true;
+
+    public float speed = 5f;
+    private bool isMoving = true;
+    private Vector3 direction;
+    private Rigidbody rb;
+    private bool hasLanded = false;
+    private bool hasSupport = false;
+    private bool hasRaisedCamera = false;
+    private bool hasScored = false;
+    private ScoreManager scoreManager;
+
+    private Color[] neonColors = new Color[]
+    {
+        new Color(0.0f, 1.0f, 1.0f), // Ярко-голубой
+        new Color(1.0f, 0.0f, 1.0f), // Пурпурный
+        new Color(1.0f, 1.0f, 0.0f), // Жёлтый
+        new Color(1.0f, 0.5f, 0.0f), // Оранжевый
+        new Color(0.0f, 1.0f, 0.5f), // Насыщенный зелёный
+        new Color(1.0f, 0.0f, 0.5f), // Ярко-розовый
+        new Color(0.5f, 0.0f, 1.0f), // Фиолетовый
+        new Color(0.0f, 0.5f, 1.0f), // Синий
+        new Color(1.0f, 0.25f, 0.25f), // Коралловый
+        new Color(0.0f, 1.0f, 0.25f)  // Салатовый
+    };
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.isKinematic = true; // Физика отключена до остановки блока
+        rb.isKinematic = true;
+
+        float blockScale = Random.Range(1.5f, 2.5f);
+        float scaleX = blockScale;
+        float scaleY = 0.5f;
+        float scaleZ = blockScale;
+        transform.localScale = new Vector3(scaleX, scaleY, scaleZ);
+
+        Renderer renderer = GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            renderer.material.color = neonColors[Random.Range(0, neonColors.Length)];
+        }
 
         float cameraWidth = Camera.main.orthographicSize * Screen.width / Screen.height;
-        float spawnX = Random.value > 0.5f ? cameraWidth + 0.5f : -cameraWidth - 0.5f; // Левый или правый край
-        float spawnZ = 8f; // Появление за башней
-        float spawnY = TowerHeightManager.Instance.CurrentTowerHeight + 2f; // Выше текущей башни
+        float spawnX = Random.value > 0.5f ? cameraWidth + 0.5f : -cameraWidth - 0.5f;
+        float spawnZ = 8f;
+        float spawnY = TowerHeightManager.Instance.CurrentTowerHeight + 2f;
 
         transform.position = new Vector3(spawnX, spawnY, spawnZ);
 
-        // Устанавливаем направление движения блока
-        float angle = spawnX > 0 ? -135f : 135f; // Угол зависит от стороны появления
-        direction = Quaternion.Euler(0, angle, 0) * Vector3.forward; // Направление движения
+        float angle = spawnX > 0 ? -135f : 135f;
+        direction = Quaternion.Euler(0, angle, 0) * Vector3.forward;
+
+        scoreManager = FindObjectOfType<ScoreManager>();
     }
 
     void Update()
     {
         if (isMoving)
         {
-            // Движение блока по направлению
             transform.Translate(direction * speed * Time.deltaTime, Space.World);
         }
 
         if (Input.GetKeyDown(KeyCode.Space) && isMoving)
         {
-            // Останавливаем блок
             isMoving = false;
-            rb.isKinematic = false; // Включаем физику
+            rb.isKinematic = false;
         }
 
-        // Если блок падает за пределы сцены
         if (transform.position.y < -10f)
         {
-            DestroyBlock(); // Удаляем блок
+            DestroyBlock();
         }
     }
 
     void FixedUpdate()
     {
-        // Проверяем устойчивость после остановки, если она ещё не была проверена
         if (!isMoving && hasLanded && !hasSupport && !hasRaisedCamera)
         {
-            hasRaisedCamera = true; // Помечаем, что камера поднята
-            DestroyBlock(); // Удаляем блок, если нет поддержки
+            hasRaisedCamera = true;
+            DestroyBlock();
         }
     }
 
     void OnCollisionEnter(Collision collision)
     {
-        // Проверяем, если блок соприкоснулся с другим объектом
         if (collision.gameObject.CompareTag("Block") || collision.gameObject.CompareTag("Base"))
         {
-            hasLanded = true; // Блок завершил движение
+            hasLanded = true;
 
-            // Если блок касается базы
             if (collision.gameObject.CompareTag("Base"))
             {
                 if (isFirstBlock)
                 {
-                    // Если это первый блок, он остаётся на базе
                     hasSupport = true;
-                    isFirstBlock = false; // Сбрасываем флаг первого блока
-                    RaiseCameraOnce(); // Поднимаем камеру
-                    this.enabled = false; // Отключаем скрипт
+                    isFirstBlock = false;
+                    RaiseCameraOnce();
+
+                    if (!hasScored)
+                    {
+                        scoreManager.AddScore(1);
+                        hasScored = true;
+                    }
+                    
+                    this.enabled = false;
                     return;
                 }
             }
 
-            // Проверяем устойчивость на другом блоке
             if (collision.gameObject.CompareTag("Block"))
             {
                 Bounds otherBounds = collision.collider.bounds;
@@ -91,14 +120,21 @@ public class BlockController : MonoBehaviour
                     transform.position.z >= otherBounds.min.z &&
                     transform.position.z <= otherBounds.max.z)
                 {
-                    hasSupport = true; // Блок устойчив
-                    TowerHeightManager.Instance.UpdateTowerHeight(transform.position.y); // Обновляем высоту башни
-                    RaiseCameraOnce(); // Поднимаем камеру
-                    this.enabled = false; // Отключаем скрипт
+                    hasSupport = true;
+                    TowerHeightManager.Instance.UpdateTowerHeight(transform.position.y);
+                    
+                    if (!hasScored)
+                    {
+                        scoreManager.AddScore(1);
+                        hasScored = true;
+                    }
+
+                    RaiseCameraOnce();
+                    this.enabled = false;
                 }
                 else
                 {
-                    hasSupport = false; // Устойчивости нет
+                    hasSupport = false;
                 }
             }
         }
@@ -106,12 +142,17 @@ public class BlockController : MonoBehaviour
 
     private void DestroyBlock()
     {
-        Destroy(gameObject); // Удаляем только текущий блок
+        Destroy(gameObject);
+
+        GameManager gameManager = FindObjectOfType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.RestartGame();
+        }
     }
 
     private void RaiseCameraOnce()
     {
-        // Поднимаем камеру только один раз
         if (!hasRaisedCamera)
         {
             var cameraController = Camera.main?.GetComponent<CameraController>();
